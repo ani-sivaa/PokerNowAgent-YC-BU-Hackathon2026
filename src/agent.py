@@ -8,7 +8,10 @@ instructions with the full poker strategy guide.
 
 from __future__ import annotations
 
-from browser_use import Agent
+from collections.abc import Awaitable, Callable
+from typing import Any
+
+from browser_use import Agent, Browser
 
 from config.settings import Settings
 from src.browser import create_browser
@@ -61,11 +64,19 @@ def create_llm(settings: Settings):
     raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
 
 
-def create_agent(settings: Settings, table_size: int = 8) -> Agent:
+def create_agent(
+    settings: Settings,
+    table_size: int = 8,
+    *,
+    browser: Browser | None = None,
+    should_stop: Callable[[], Awaitable[bool]] | None = None,
+    on_new_step: Callable[..., Any] | None = None,
+) -> Agent:
     """Wire everything together and return a ready-to-run Agent."""
     configure_tools(settings.captcha)
     llm = create_llm(settings)
-    browser = create_browser(settings.browser)
+    if browser is None:
+        browser = create_browser(settings.browser)
     task = build_task(table_size)
 
     return Agent(
@@ -73,4 +84,6 @@ def create_agent(settings: Settings, table_size: int = 8) -> Agent:
         llm=llm,
         browser=browser,
         tools=tools,
+        register_should_stop_callback=should_stop,
+        register_new_step_callback=on_new_step,
     )
