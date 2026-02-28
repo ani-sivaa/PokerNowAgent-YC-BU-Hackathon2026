@@ -7,6 +7,9 @@ Enter to let the agent continue.
 """
 
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def prompt_human_solve() -> tuple[bool, str]:
@@ -16,6 +19,7 @@ async def prompt_human_solve() -> tuple[bool, str]:
     Runs the blocking input() call in a thread executor so the async
     event loop stays responsive.
     """
+    logger.info("waiting for human to solve captcha in browser")
     try:
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
@@ -26,6 +30,8 @@ async def prompt_human_solve() -> tuple[bool, str]:
             ),
         )
     except EOFError:
+        logger.warning("non-interactive terminal, cannot prompt user")
         return False, "Non-interactive terminal; cannot prompt for captcha"
 
+    logger.info("human confirmed captcha solved")
     return True, "Human confirmed CAPTCHA solved"
