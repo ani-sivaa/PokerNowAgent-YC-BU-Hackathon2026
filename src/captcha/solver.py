@@ -8,11 +8,17 @@ Workflow:
   4. Inject the token into the page so the form can proceed.
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
+from typing import TYPE_CHECKING
 
 from browser_use.browser.session import BrowserSession
+
+if TYPE_CHECKING:
+    from playwright.async_api import Page
 
 try:
     import httpx
@@ -22,7 +28,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-async def detect_recaptcha(page) -> dict | None:
+async def detect_recaptcha(page: Page) -> dict | None:
     """Look for a reCAPTCHA v2 element and return its sitekey + page URL."""
     js = """() => {
         const el = document.querySelector('.g-recaptcha')
@@ -90,7 +96,7 @@ async def poll_solution(
     return None
 
 
-async def inject_token(page, token: str) -> None:
+async def inject_token(page: Page, token: str) -> None:
     """Write the solved token into the reCAPTCHA response fields on the page."""
     safe = token.replace("\\", "\\\\").replace("'", "\\'")
     safe = safe.replace("\n", "\\n").replace("\r", "\\r")
