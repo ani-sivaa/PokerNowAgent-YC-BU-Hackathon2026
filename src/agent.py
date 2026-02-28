@@ -8,9 +8,6 @@ instructions with the full poker strategy guide.
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from typing import Any
-
 from browser_use import Agent, Browser
 
 from config.settings import Settings
@@ -69,8 +66,6 @@ def create_agent(
     table_size: int = 8,
     *,
     browser: Browser | None = None,
-    should_stop: Callable[[], Awaitable[bool]] | None = None,
-    on_new_step: Callable[..., Any] | None = None,
 ) -> Agent:
     """Wire everything together and return a ready-to-run Agent."""
     configure_tools(settings.captcha)
@@ -84,6 +79,4 @@ def create_agent(
         llm=llm,
         browser=browser,
         tools=tools,
-        register_should_stop_callback=should_stop,
-        register_new_step_callback=on_new_step,
     )

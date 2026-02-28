@@ -12,7 +12,7 @@ from browser_use import Browser
 
 from config import Settings
 from src.agent import create_agent
-from src.overlay import AgentOverlay
+from src.overlay import create_overlay_hook
 
 
 async def main() -> None:
@@ -23,28 +23,15 @@ async def main() -> None:
         keep_alive=True,
     )
 
-    overlay = AgentOverlay(browser)
-    await overlay.setup("https://network.pokernow.com/sng_tournaments")
+    agent = create_agent(settings, browser=browser)
+    hook = create_overlay_hook()
 
-    print("\n  Bot is PAUSED — log in, then toggle the overlay to start.\n")
+    print(
+        "\n  The overlay starts PAUSED — log in first, "
+        "then toggle it on to let the bot play.\n"
+    )
 
-    while True:
-        await overlay.wait_for_activation()
-        print("  Bot ACTIVATED\n")
-
-        agent = create_agent(
-            settings,
-            browser=browser,
-            should_stop=overlay.should_stop,
-            on_new_step=overlay.on_new_step,
-        )
-        await agent.run()
-
-        if await overlay.check_active():
-            print("  Agent run complete.")
-            break
-
-        print("\n  Bot PAUSED — toggle the overlay to resume.\n")
+    await agent.run(on_step_start=hook)
 
 
 if __name__ == "__main__":

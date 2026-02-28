@@ -1,42 +1,39 @@
 """
 In-browser overlay for toggling the poker agent on and off.
 
-Injects a sleek floating panel (Shadow-DOM isolated) into the
-Playwright page so the operator can pause the bot -- e.g. to log in
-or handle something manually -- then resume with one click.
+Uses browser-use's lifecycle hooks (on_step_start) and the built-in
+agent.pause() / agent.resume() API.  The overlay is a Shadow-DOM
+isolated floating panel injected via page.evaluate().
 """
 
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from browser_use import Browser
+    from browser_use import Agent
 
 
 # ------------------------------------------------------------------
-# JavaScript — single self-contained snippet used for BOTH
-# context.add_init_script (runs on every navigation) AND
-# page.evaluate (on-demand re-injection).
+# JavaScript — self-contained overlay injection.
+# Persists toggle state in localStorage so it survives navigations.
 # ------------------------------------------------------------------
 
-_OVERLAY_JS = r"""
+OVERLAY_JS = r"""
 (function(){
-  /* restore toggle state */
+  if(document.getElementById('__poker-agent-overlay__'))return;
+  if(!document.body){setTimeout(arguments.callee,100);return}
+
   try{window.__pokerAgentActive__=localStorage.getItem('__pokerAgentActive__')==='true'}
   catch(e){window.__pokerAgentActive__=false}
 
-  function __pao_inject(){
-    if(document.getElementById('__poker-agent-overlay__'))return;
-    if(!document.body){setTimeout(__pao_inject,100);return}
+  var host=document.createElement('div');
+  host.id='__poker-agent-overlay__';
+  host.style.cssText='position:fixed;bottom:20px;right:20px;z-index:2147483647;';
 
-    var host=document.createElement('div');
-    host.id='__poker-agent-overlay__';
-    host.style.cssText='position:fixed;bottom:20px;right:20px;z-index:2147483647;';
-
-    var shadow=host.attachShadow({mode:'open'});
-    shadow.innerHTML='\
+  var shadow=host.attachShadow({mode:'open'});
+  shadow.innerHTML='\
 <style>\
 *{margin:0;padding:0;box-sizing:border-box}\
 .panel{\
@@ -102,140 +99,89 @@ _OVERLAY_JS = r"""
   <button class="toggle"><div class="knob"></div></button>\
 </div>';
 
-    document.body.appendChild(host);
+  document.body.appendChild(host);
 
-    var dot=shadow.querySelector('.dot');
-    var text=shadow.querySelector('.text');
-    var toggle=shadow.querySelector('.toggle');
-    var panel=shadow.querySelector('.panel');
+  var dot=shadow.querySelector('.dot');
+  var text=shadow.querySelector('.text');
+  var toggle=shadow.querySelector('.toggle');
+  var panel=shadow.querySelector('.panel');
 
-    function update(){
-      var on=!!window.__pokerAgentActive__;
-      dot.classList.toggle('on',on);
-      toggle.classList.toggle('on',on);
-      panel.classList.toggle('on',on);
-      text.textContent=on?'Active':'Paused';
-    }
-    toggle.addEventListener('click',function(){
-      window.__pokerAgentActive__=!window.__pokerAgentActive__;
-      try{localStorage.setItem('__pokerAgentActive__',String(window.__pokerAgentActive__))}catch(e){}
-      update();
-    });
+  function update(){
+    var on=!!window.__pokerAgentActive__;
+    dot.classList.toggle('on',on);
+    toggle.classList.toggle('on',on);
+    panel.classList.toggle('on',on);
+    text.textContent=on?'Active':'Paused';
+  }
+  toggle.addEventListener('click',function(){
+    window.__pokerAgentActive__=!window.__pokerAgentActive__;
+    try{localStorage.setItem('__pokerAgentActive__',String(window.__pokerAgentActive__))}catch(e){}
     update();
-  }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',__pao_inject);
-  }else{
-    __pao_inject();
-  }
+  });
+  update();
 })();
 """
 
 
 # ------------------------------------------------------------------
-# Python helper
+# Hook factory
 # ------------------------------------------------------------------
 
-class AgentOverlay:
-    """Manages the in-browser toggle overlay and pause / resume lifecycle."""
+def create_overlay_hook():
+    """Return an ``on_step_start`` hook that injects the overlay and
+    pauses / resumes the agent based on the toggle state.
 
-    def __init__(self, browser: Browser) -> None:
-        self._browser = browser
-        self._init_script_added = False
+    Usage::
 
-    # -- setup --------------------------------------------------------
+        hook = create_overlay_hook()
+        await agent.run(on_step_start=hook)
+    """
+    _init_script_added = False
 
-    async def setup(self, url: str) -> None:
-        """Start the browser, navigate to *url*, and inject the overlay."""
-        await self._browser.start()
-
-        page = await self._browser.get_current_page()
-        if page is None:
-            await self._browser.new_page(url)
-        else:
-            await self._browser.navigate_to(url)
-
-        # Let the page settle (PokerNow is slow to load).
-        await asyncio.sleep(3)
-
-        page = await self._browser.must_get_current_page()
-
-        # Init script runs the full overlay JS on every future navigation.
-        if not self._init_script_added:
-            try:
-                await page.context.add_init_script(_OVERLAY_JS)
-                self._init_script_added = True
-            except Exception:
-                pass
-
-        # Inject right now on the current page too.
-        await self._inject_with_retry(page, attempts=5)
-
-    # -- overlay injection -------------------------------------------
-
-    async def _inject(self, page: Any | None = None) -> None:
-        if page is None:
-            page = await self._browser.get_current_page()
-        if page is None:
-            return
+    async def _ensure_overlay(agent: Agent) -> None:
+        """Inject the overlay into the current page if missing."""
+        nonlocal _init_script_added
         try:
+            page = await agent.browser_session.must_get_current_page()
+
+            if not _init_script_added:
+                await page.context.add_init_script(OVERLAY_JS)
+                _init_script_added = True
+
             exists = await page.evaluate(
                 "() => !!document.getElementById('__poker-agent-overlay__')"
             )
             if not exists:
-                await page.evaluate(_OVERLAY_JS)
+                await page.evaluate(OVERLAY_JS)
         except Exception:
             pass
 
-    async def _inject_with_retry(
-        self, page: Any | None = None, attempts: int = 3
-    ) -> None:
-        for _ in range(attempts):
-            await self._inject(page)
-            try:
-                if page and await page.evaluate(
-                    "() => !!document.getElementById('__poker-agent-overlay__')"
-                ):
-                    return
-            except Exception:
-                pass
-            await asyncio.sleep(0.5)
-
-    # -- state queries -----------------------------------------------
-
-    async def _read_active(self) -> bool:
+    async def _is_active(agent: Agent) -> bool:
         try:
-            page = await self._browser.get_current_page()
-            if page:
-                return await page.evaluate(
-                    "() => window.__pokerAgentActive__ === true"
-                )
+            page = await agent.browser_session.must_get_current_page()
+            return await page.evaluate(
+                "() => window.__pokerAgentActive__ === true"
+            )
         except Exception:
-            pass
-        return False
+            return True
 
-    async def check_active(self) -> bool:
-        """Return the current toggle state without side-effects."""
-        return await self._read_active()
+    async def hook(agent: Agent) -> None:
+        await _ensure_overlay(agent)
 
-    # -- agent callbacks ---------------------------------------------
+        if await _is_active(agent):
+            return
 
-    async def should_stop(self) -> bool:
-        """``register_should_stop_callback`` — True when the bot is paused."""
-        await self._inject()
-        return not await self._read_active()
+        # User toggled the bot off — pause until they turn it back on.
+        agent.pause()
+        print("\n  Bot PAUSED — toggle the overlay to resume.\n")
 
-    async def on_new_step(self, _state: Any, _output: Any, _n: int) -> None:
-        """``register_new_step_callback`` — re-injects overlay each step."""
-        await self._inject()
-
-    # -- blocking wait -----------------------------------------------
-
-    async def wait_for_activation(self) -> None:
-        """Block until the operator toggles the bot *on*."""
         while True:
-            await self._inject()
-            if await self._read_active():
-                return
             await asyncio.sleep(0.5)
+            await _ensure_overlay(agent)
+            if await _is_active(agent):
+                break
+
+        agent.resume()
+        print("  Bot RESUMED\n")
+
+    return hook
