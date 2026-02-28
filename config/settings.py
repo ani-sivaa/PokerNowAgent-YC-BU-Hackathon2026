@@ -32,6 +32,12 @@ class BrowserSettings:
         "*.pokernow.club",
         "network.pokernow.com",
         "www.pokernow.com",
+        "accounts.google.com",
+        "*.google.com",
+        "discord.com",
+        "*.discord.com",
+        "*.facebook.com",
+        "api.x.com",
     )
 
 
