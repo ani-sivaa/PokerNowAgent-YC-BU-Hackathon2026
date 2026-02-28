@@ -10,6 +10,7 @@ Workflow:
 
 import asyncio
 import json
+import logging
 
 from browser_use.browser.session import BrowserSession
 
@@ -17,6 +18,8 @@ try:
     import httpx
 except ImportError:
     httpx = None
+
+logger = logging.getLogger(__name__)
 
 
 async def detect_recaptcha(page) -> dict | None:
@@ -134,10 +137,12 @@ async def solve_captcha(
         return False, f"Detection script failed: {exc}"
 
     if recaptcha is None:
+        logger.debug("no recaptcha element found on current page")
         return False, "No reCAPTCHA element found on this page"
 
     sitekey = recaptcha["sitekey"]
     page_url = recaptcha.get("url", "")
+    logger.info("recaptcha detected – sitekey=%s url=%s", sitekey[:12], page_url)
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -145,8 +150,10 @@ async def solve_captcha(
                 client, api_url, api_key, sitekey, page_url
             )
             if not task_id:
+                logger.warning("capsolver returned no task id")
                 return False, "CapSolver did not return a task ID"
 
+            logger.info("capsolver task created – id=%s", task_id)
             token = await poll_solution(
                 client, api_url, api_key, task_id, poll_interval, poll_timeout
             )
@@ -154,12 +161,15 @@ async def solve_captcha(
         return False, f"CapSolver request failed: {exc}"
 
     if not token:
+        logger.warning("capsolver failed to produce a solution")
         return False, "CapSolver could not produce a solution"
 
     try:
         await inject_token(page, token)
     except Exception as exc:
+        logger.error("token injection failed: %s", exc)
         return False, f"Token injection failed: {exc}"
 
+    logger.info("captcha solved successfully via capsolver")
     await asyncio.sleep(1)
     return True, "CAPTCHA solved via CapSolver"
