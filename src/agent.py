@@ -8,6 +8,7 @@ instructions with the full poker strategy guide.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from browser_use import Agent
@@ -16,6 +17,8 @@ from config.settings import Settings
 from src.browser import create_browser
 from src.strategy import SNGStrategy
 from src.tools import configure_tools, tools
+
+logger = logging.getLogger(__name__)
 
 NAVIGATION_TASK = """\
 1. Go to https://network.pokernow.com/sng_tournaments.
@@ -74,11 +77,13 @@ def create_llm(settings: Settings) -> Any:
 
 def create_agent(settings: Settings) -> Agent:
     """Wire everything together and return a ready-to-run Agent."""
+    logger.info("initializing agent with provider=%s", settings.llm_provider)
     configure_tools(settings.captcha)
     llm = create_llm(settings)
     browser = create_browser(settings.browser)
     task = build_task(settings.table_size)
 
+    logger.info("agent ready – table_size=%d", settings.table_size)
     return Agent(
         task=task,
         llm=llm,
