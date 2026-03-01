@@ -30,7 +30,8 @@ tournament stage and table dynamics.
 ## Project structure
 
 ```
-run_agent.py              Entrypoint
+run_agent.py              Entrypoint (CLI flags: --table-size, -v)
+pyproject.toml            Project metadata and dev dependencies
 config/
   settings.py             Centralized configuration from .env
 src/
@@ -45,6 +46,11 @@ src/
     position.py           Opening ranges by table position
     tournament.py         Stage detection, ICM push-fold ranges
     sng_strategy.py       Strategy engine and prompt generation
+tests/
+  test_hand_evaluator.py  Hand tier and odds tests
+  test_position.py        Opening range and seat mapping tests
+  test_tournament.py      Stage detection and ICM tests
+  test_strategy.py        Prompt generation tests
 ```
 
 ## Setup
@@ -92,6 +98,8 @@ manually.
 
 ```bash
 python run_agent.py
+python run_agent.py --table-size 6
+python run_agent.py -v   # verbose / debug logging
 ```
 
 Close any existing Chrome instances before running if you want the
@@ -129,6 +137,27 @@ different strategy without touching the automation layer.
   by 25-65% depending on stack size.
 - **Push-fold**: Below 15 BB the agent switches to shove-or-fold mode,
   referencing stage-specific hand ranges.
+
+## Running tests
+
+```bash
+pip install pytest
+pytest
+```
+
+Tests cover hand evaluation, position ranges, tournament stage
+detection, and strategy prompt generation.
+
+## Configuration reference
+
+| Variable | Default | Description |
+|---|---|---|
+| `BROWSER_USE_API_KEY` | — | Browser-Use Cloud LLM key |
+| `OPENAI_API_KEY` | — | OpenAI key (alternative) |
+| `GOOGLE_API_KEY` | — | Google Gemini key (alternative) |
+| `ANTHROPIC_API_KEY` | — | Anthropic Claude key (alternative) |
+| `CAPSOLVER_API_KEY` | — | CapSolver key for automatic captcha solving |
+| `TABLE_SIZE` | `8` | Number of seats at the table |
 
 ## Disclaimer
 
