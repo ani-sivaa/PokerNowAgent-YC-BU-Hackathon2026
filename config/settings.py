@@ -58,12 +58,28 @@ class Settings:
         llm_provider, llm_api_key = cls._resolve_llm()
         capsolver_key = os.environ.get("CAPSOLVER_API_KEY") or None
 
-        return cls(
+        settings = cls(
             captcha=CaptchaSettings(api_key=capsolver_key),
             browser=BrowserSettings(),
             llm_provider=llm_provider,
             llm_api_key=llm_api_key,
         )
+        settings._validate()
+        return settings
+
+    def _validate(self) -> None:
+        """Sanity-check values that are easy to misconfigure."""
+        if len(self.llm_api_key) < 8:
+            print(
+                "Warning: LLM API key looks suspiciously short. "
+                "Double-check your .env file.",
+                file=sys.stderr,
+            )
+        if self.captcha.api_key and len(self.captcha.api_key) < 8:
+            print(
+                "Warning: CAPSOLVER_API_KEY looks suspiciously short.",
+                file=sys.stderr,
+            )
 
     @staticmethod
     def _resolve_llm() -> tuple[str, str]:
