@@ -6,6 +6,8 @@ a browsing session. We keep the tool definitions thin -- heavy logic
 lives in the captcha and strategy sub-packages.
 """
 
+import logging
+
 from browser_use import Tools
 
 try:
@@ -18,6 +20,8 @@ from browser_use.browser.session import BrowserSession
 from config.settings import CaptchaSettings
 from src.captcha.human import prompt_human_solve
 from src.captcha.solver import solve_captcha
+
+logger = logging.getLogger(__name__)
 
 tools = Tools()
 
@@ -40,6 +44,7 @@ def configure_tools(captcha: CaptchaSettings) -> None:
 )
 async def solve_captcha_via_api(browser_session: BrowserSession) -> ActionResult:
     """Attempt automatic reCAPTCHA v2 solving through CapSolver."""
+    logger.info("solve_captcha_via_api invoked")
     if _captcha_settings is None or not _captcha_settings.api_key:
         return ActionResult(
             success=False,
@@ -71,6 +76,7 @@ async def solve_captcha_via_api(browser_session: BrowserSession) -> ActionResult
 )
 async def request_human_solve_captcha() -> ActionResult:
     """Block until the operator confirms the captcha is solved."""
+    logger.info("request_human_solve_captcha invoked")
     success, message = await prompt_human_solve()
     if success:
         return ActionResult(success=True, extracted_content=message)
