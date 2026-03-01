@@ -61,3 +61,9 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\nAgent stopped by user.", file=sys.stderr)
         sys.exit(0)
+    except RuntimeError as exc:
+        logging.getLogger(__name__).error("runtime error: %s", exc)
+        sys.exit(1)
+    except Exception as exc:
+        logging.getLogger(__name__).exception("unexpected error: %s", exc)
+        sys.exit(2)
