@@ -49,6 +49,7 @@ class Settings:
     browser: BrowserSettings
     llm_provider: str
     llm_api_key: str
+    table_size: int = 8
 
     @classmethod
     def from_env(cls, env_path: str = ".env") -> "Settings":
@@ -57,12 +58,14 @@ class Settings:
 
         llm_provider, llm_api_key = cls._resolve_llm()
         capsolver_key = os.environ.get("CAPSOLVER_API_KEY") or None
+        table_size = int(os.environ.get("TABLE_SIZE", "8"))
 
         settings = cls(
             captcha=CaptchaSettings(api_key=capsolver_key),
             browser=BrowserSettings(),
             llm_provider=llm_provider,
             llm_api_key=llm_api_key,
+            table_size=table_size,
         )
         settings._validate()
         return settings

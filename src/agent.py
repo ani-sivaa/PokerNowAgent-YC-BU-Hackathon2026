@@ -72,12 +72,12 @@ def create_llm(settings: Settings) -> Any:
     raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
 
 
-def create_agent(settings: Settings, table_size: int = 8) -> Agent:
+def create_agent(settings: Settings) -> Agent:
     """Wire everything together and return a ready-to-run Agent."""
     configure_tools(settings.captcha)
     llm = create_llm(settings)
     browser = create_browser(settings.browser)
-    task = build_task(table_size)
+    task = build_task(settings.table_size)
 
     return Agent(
         task=task,
