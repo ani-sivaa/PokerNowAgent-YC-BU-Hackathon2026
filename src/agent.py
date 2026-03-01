@@ -8,6 +8,8 @@ instructions with the full poker strategy guide.
 
 from __future__ import annotations
 
+from typing import Any
+
 from browser_use import Agent
 
 from config.settings import Settings
@@ -45,8 +47,12 @@ def build_task(table_size: int = 8) -> str:
     return f"{NAVIGATION_TASK}\n{strategy}"
 
 
-def create_llm(settings: Settings):
-    """Instantiate the LLM client based on the configured provider."""
+def create_llm(settings: Settings) -> Any:
+    """Instantiate the LLM client based on the configured provider.
+
+    Returns a ChatModel instance compatible with browser-use's Agent.
+    The concrete type depends on which LLM provider is configured.
+    """
     if settings.llm_provider == "browser_use":
         from browser_use import ChatBrowserUse
         return ChatBrowserUse()
