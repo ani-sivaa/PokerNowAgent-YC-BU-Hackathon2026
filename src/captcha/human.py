@@ -21,7 +21,7 @@ async def prompt_human_solve() -> tuple[bool, str]:
     """
     logger.info("waiting for human to solve captcha in browser")
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         await loop.run_in_executor(
             None,
             lambda: input(
