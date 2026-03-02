@@ -75,6 +75,13 @@ class Settings:
 
     def _validate(self) -> None:
         """Sanity-check values that are easy to misconfigure."""
+        if not 2 <= self.table_size <= 9:
+            print(
+                f"Warning: TABLE_SIZE={self.table_size} is outside the "
+                "supported range (2-9). Defaulting to 8.",
+                file=sys.stderr,
+            )
+            object.__setattr__(self, "table_size", 8)
         if len(self.llm_api_key) < 8:
             print(
                 "Warning: LLM API key looks suspiciously short. "
