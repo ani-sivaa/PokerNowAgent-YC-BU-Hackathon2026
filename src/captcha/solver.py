@@ -13,12 +13,14 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from browser_use.browser.session import BrowserSession
 
 if TYPE_CHECKING:
     from playwright.async_api import Page
+
+CaptchaResult = tuple[bool, str]
 
 try:
     import httpx
