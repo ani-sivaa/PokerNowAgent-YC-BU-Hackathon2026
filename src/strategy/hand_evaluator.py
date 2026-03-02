@@ -102,3 +102,19 @@ def implied_odds(
 def minimum_equity_to_call(call_amount: float, pot_size: float) -> float:
     """Return the minimum hand equity needed for a break-even call."""
     return pot_odds(call_amount, pot_size)
+
+
+def fold_equity(
+    shove_size: float, pot_size: float, villain_fold_pct: float
+) -> float:
+    """
+    Estimate the expected value of a shove considering fold equity.
+
+    Returns the EV in chips. Positive means profitable even if the
+    hand has zero showdown equity -- the opponent folds often enough.
+    """
+    if villain_fold_pct < 0 or villain_fold_pct > 1:
+        raise ValueError("villain_fold_pct must be between 0 and 1")
+    ev_when_fold = villain_fold_pct * pot_size
+    ev_when_call = (1 - villain_fold_pct) * (-shove_size)
+    return ev_when_fold + ev_when_call
