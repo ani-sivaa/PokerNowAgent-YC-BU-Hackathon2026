@@ -123,7 +123,11 @@ class SNGStrategy:
             7. Position matters -- steal from the button and cutoff, fold from UTG.
             8. NEVER fold a strong made hand postflop to a small bet. If you have
                two pair or better and the bet is less than half the pot, CALL.
-            9. After the money ({itm} or fewer players): play aggressively to win."""
+            9. SEE MORE FLOPS: If you hold a broadway card (A/K/Q/J/10) suited
+               with any other card, call cheap preflop bets to see the flop.
+               Evaluate the flop -- continue if you hit a pair or flush draw,
+               fold if you miss completely. Do NOT auto-fold playable suited hands.
+            10. After the money ({itm} or fewer players): play aggressively to win."""
         ).format(itm=itm)
 
     def _preflop_guide(self) -> str:
@@ -150,6 +154,28 @@ class SNGStrategy:
             "Fold everything weaker to a raise unless you are on the button "
             "and getting a great price."
         )
+
+        lines.append("")
+        lines.append("SUITED ROYALS RULE (see cheap flops with these):")
+        lines.append(
+            "  If you hold one broadway card (A, K, Q, J, or 10) plus any\n"
+            "  other card of the SAME SUIT, this is a suited royal hand.\n"
+            "  Examples: Kh 7h, Qs 4s, Jd 3d, Ah 6h, Ts 2s.\n"
+            "  These hands have flush potential and high-card value.\n"
+            "  RULE: Do NOT auto-fold suited royals. Instead:\n"
+            "    - If you can CHECK for free: always check and see the flop.\n"
+            "    - If the call price is cheap (1 BB or less, or under 15%\n"
+            "      of your stack): CALL and see the flop.\n"
+            "    - If the price is expensive (a big raise): fold.\n"
+            "  AFTER THE FLOP with suited royals, evaluate:\n"
+            "    - Did you hit a flush draw (2 of your suit on board)? CALL\n"
+            "      reasonable bets to see the turn/river.\n"
+            "    - Did you make a flush (3+ of your suit on board)? BET/RAISE.\n"
+            "    - Did you hit top pair with your broadway card? CALL or BET.\n"
+            "    - Did you completely miss (no pair, no draw)? CHECK or FOLD.\n"
+            "  This lets you see more flops cheaply and win big pots when\n"
+            "  you connect, instead of folding every hand preflop."
+        )
         return "\n".join(lines)
 
     def _postflop_guide(self) -> str:
@@ -170,8 +196,11 @@ class SNGStrategy:
               with any pair or draw.
 
             When to FOLD postflop:
-            - You completely missed the board AND face a big bet.
+            - You completely missed the board (no pair, no draw, no
+              flush draw, no straight draw) AND face a bet.
             - You have bottom pair with no kicker and face aggression.
+            - You called preflop with a suited royal hand and the flop
+              gave you NOTHING (no pair, no flush draw). Cut your losses.
 
             When to BET/RAISE postflop:
             - C-bet 50-70% of pot as preflop raiser on dry boards.
@@ -280,7 +309,10 @@ class SNGStrategy:
             - Clicking the same button repeatedly when it doesn't respond.
               Click ONCE. If no response after 2 seconds, the action went
               through or it is not your turn. Wait for the next hand.
-            - Waiting 5+ seconds between observations. Use short waits (2s).""")
+            - Waiting 5+ seconds between observations. Use short waits (2s).
+            - Auto-folding suited broadway hands preflop when the price is
+              cheap. A hand like Kh 7h or Qs 4s can make a flush. See the
+              flop cheaply, THEN decide. Only fold these to big raises.""")
 
 
 def build_strategy_task_prompt(table_size: int = 8) -> str:
