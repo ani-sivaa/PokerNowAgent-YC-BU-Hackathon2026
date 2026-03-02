@@ -237,7 +237,9 @@ class SNGStrategy:
                 "5-6 players. Getting closer to the money. "
                 "With 15+ BB: tighten up slightly, steal from late position. "
                 "With 8-14 BB: actively steal blinds. Shove over limpers with "
-                "strong hands. "
+                "strong hands. Aim to steal at least once per orbit to offset "
+                "the blind cost -- if nobody has opened and you are on the "
+                "BTN or CO, raise with any playable hand. "
                 "With <8 BB: shove-or-fold. Any pair, any Ace, any two Broadway. "
                 "You MUST pick up blinds at this stage or you will blind out."
             ),
