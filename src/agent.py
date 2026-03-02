@@ -35,12 +35,36 @@ NAVIGATION_TASK = """\
    If a captcha appears when joining, follow the same captcha flow.
 4. When a table opens, take your seat. Only Friendly Sit & Go -- do not
    navigate to Lounge or other game modes.
-5. For every hand when it is your turn: observe the table state (your cards,
-   community cards, pot size, stack sizes, position, and blind level), then
-   follow the strategy guide below to decide your action and click the
-   appropriate button (fold / check / bet / call / raise / all-in).
-6. When the tournament ends, return to the SNG lobby and rejoin the queue.
-7. Continue until told to stop, then call done() with a short results summary.
+5. DETECTING YOUR TURN vs NOT YOUR TURN:
+   It is ONLY your turn when action buttons (Fold, Check, Call, Bet, Raise,
+   All In) are visible on screen. If you do NOT see any of these buttons,
+   it is NOT your turn -- do NOT try to click anything. Just wait 2 seconds
+   and check again. Possible reasons the buttons are missing:
+     a) It is another player's turn.
+     b) You lagged out / timed out -- the game auto-folded for you.
+     c) Cards are being dealt or the hand ended.
+   In ALL cases: wait 2 seconds (NOT 5), then check for buttons again.
+6. CLICKING RULE: Click each button exactly ONCE. If the button disappears
+   after clicking, your action went through -- do NOT click it again.
+   If the button is still there after 2 seconds, click it one more time.
+   Never click the same button 3+ times. If buttons vanish, wait for the
+   next hand -- do NOT keep clicking stale elements.
+7. When it IS your turn (action buttons are visible): observe the table
+   state (your cards, community cards, pot size, stack sizes, position,
+   and blind level), then follow the strategy guide to decide your action.
+   CRITICAL TIMING: PokerNow gives ~5 seconds per turn.
+   To RAISE: click "Raise", then IMMEDIATELY click a size button
+   (Min Raise, 1/2 Pot, Pot, or All In), then confirm. All in ONE step.
+   To CALL: click the Call button. Read the amount on it first.
+   To CHECK: click Check. Check is FREE -- always prefer check over fold
+   when no bet is facing you.
+   RULE: You CANNOT check when facing a bet or raise. Your options are
+   Call, Raise, or Fold only.
+   HOW TO CALL: The Call button shows the chip cost (e.g. "Call 200").
+   Compare it to the pot. If you have a strong hand (top pair+, two pair,
+   flush, straight), CALL. Do NOT fold strong hands to small bets.
+8. When the tournament ends, return to the SNG lobby and rejoin the queue.
+9. Continue until told to stop, then call done() with a short results summary.
 """
 
 
@@ -83,10 +107,27 @@ def create_agent(settings: Settings) -> Agent:
     browser = create_browser(settings.browser)
     task = build_task(settings.table_size)
 
+    speed_instructions = (
+        "SPEED IS CRITICAL. PokerNow gives ~5 seconds per turn. "
+        "To RAISE: in one step click Raise → size button → confirm. "
+        "To CALL: click Call once. To CHECK: click Check once. "
+        "CLICK ONCE ONLY. If the button disappears, it worked. "
+        "Do NOT click the same button repeatedly. "
+        "When waiting for your turn, wait 2 seconds, NOT 5. "
+        "Do NOT fold strong made hands (two pair+) to small bets. "
+        "If your stack is under 8 BB, you MUST shove with decent hands "
+        "or you will blind out and lose."
+    )
+
     logger.info("agent ready – table_size=%d", settings.table_size)
     return Agent(
         task=task,
         llm=llm,
         browser=browser,
         tools=tools,
+        step_timeout=60,
+        max_actions_per_step=10,
+        max_failures=15,
+        flash_mode=True,
+        extend_system_message=speed_instructions,
     )

@@ -72,25 +72,59 @@ class SNGStrategy:
         return [h for h, t in HAND_TIERS.items() if t == tier]
 
     def _objective(self) -> str:
+        itm = 4 if self.table_size >= 8 else 3
         return textwrap.dedent("""\
             POKER STRATEGY GUIDE -- {n}-Player Sit & Go
             ============================================
-            Primary objective: finish in the top 3 consistently.
-            This is a survival-first strategy. Preserving chips is more
-            important than accumulating them, especially near the bubble."""
-        ).format(n=self.table_size)
+            Primary objective: SURVIVE to the top {itm} to earn points.
+            You earn points when {itm} or fewer players remain.
+
+            KEY PRINCIPLE: Survival does NOT mean folding everything.
+            If you fold every hand, the blinds will eat your stack and you
+            will be eliminated. You must pick up blinds and win small pots
+            to stay alive. The strategy changes based on your stack size:
+
+            STACK SIZE RULES (before the money, >{itm} players left):
+              BIG STACK (15+ BB):
+                - Play tight. Enter pots with strong hands only.
+                - Avoid unnecessary all-ins. You can afford to wait.
+              MEDIUM STACK (8-14 BB):
+                - Steal blinds from late position with decent hands.
+                - Avoid calling all-ins without premium hands.
+                - You can raise/fold but avoid committing your whole stack.
+              SHORT STACK (4-7 BB):
+                - Shove or fold. Do NOT limp or min-raise.
+                - Shove with: any pair, any Ace, KQ, KJ, KTs, QJs.
+                - You MUST pick up blinds or you will die. Do not wait
+                  for AA/KK -- you will blind out before seeing them.
+              DESPERATE STACK (1-3 BB):
+                - Shove with ANY two cards from late position.
+                - Shove with any Ace, any King, any pair, any suited
+                  connectors from any position.
+                - At this stack you WILL be eliminated by blinds if you
+                  fold. ANY hand is better than being blinded out.
+
+            AFTER you are in the money ({itm} or fewer players remain):
+              - Open up. Steal aggressively. Target short stacks.
+              - Play to WIN and climb the payout ladder."""
+        ).format(n=self.table_size, itm=itm)
 
     def _general_principles(self) -> str:
+        itm = 4 if self.table_size >= 8 else 3
         return textwrap.dedent("""\
             GENERAL PRINCIPLES
             ------------------
-            1. Play tight-aggressive (TAG). Enter few pots but play them hard.
-            2. Position is paramount -- act last whenever possible.
-            3. Avoid coin-flip situations early; let weaker players bust each other.
-            4. Protect your stack on the bubble -- fold marginal hands.
-            5. Open up significantly once in the money or heads-up.
-            6. Never slow-play premium hands multi-way; always build the pot.
-            7. Pay attention to stack sizes at the table -- they dictate your range.""")
+            1. Count remaining players EVERY hand to know your stage.
+            2. Check your stack in BB EVERY hand to pick the right mode.
+            3. With 15+ BB: play tight, avoid unnecessary confrontations.
+            4. With 8-14 BB: steal blinds from late position, avoid calling shoves.
+            5. With 4-7 BB: shove-or-fold only. Shove any pair, any Ace, KQ/KJ/KT.
+            6. With 1-3 BB: shove almost anything. You WILL die to blinds otherwise.
+            7. Position matters -- steal from the button and cutoff, fold from UTG.
+            8. NEVER fold a strong made hand postflop to a small bet. If you have
+               two pair or better and the bet is less than half the pot, CALL.
+            9. After the money ({itm} or fewer players): play aggressively to win."""
+        ).format(itm=itm)
 
     def _preflop_guide(self) -> str:
         lines = [
@@ -122,18 +156,33 @@ class SNGStrategy:
         return textwrap.dedent("""\
             POSTFLOP GUIDELINES
             -------------------
-            - Continuation bet (c-bet) 50-70% of the pot when you were the
-              preflop raiser, especially on dry boards (no flush/straight draws).
-            - Check-fold on wet boards when you missed entirely.
-            - With strong made hands (top pair+), bet for value -- do not
-              slow-play in multi-way pots.
-            - With draws, calculate pot odds before calling:
-                pot_odds = amount_to_call / (pot + amount_to_call)
-              Call only if your estimated equity exceeds the pot odds.
-            - On the river, value-bet thinly when ahead and check behind
-              with marginal hands to avoid getting raised off your equity.
-            - Bluff sparingly -- only when the board texture supports a
-              credible story and you have blockers to strong hands.""")
+            CRITICAL: Do NOT fold strong hands to small bets. The old
+            strategy was folding two-pair to 1 BB bets -- that is WRONG.
+
+            When to CALL (even before the money):
+            - You have top pair + good kicker or better: ALWAYS call
+              reasonable bets (up to pot-sized).
+            - You have two pair or better: ALWAYS call. Only fold two pair
+              to an all-in if the board is extremely dangerous (4 to a
+              flush/straight you don't have).
+            - You have a flush or straight: ALWAYS call or raise.
+            - Getting great pot odds (calling < 25% of the pot): call
+              with any pair or draw.
+
+            When to FOLD postflop:
+            - You completely missed the board AND face a big bet.
+            - You have bottom pair with no kicker and face aggression.
+
+            When to BET/RAISE postflop:
+            - C-bet 50-70% of pot as preflop raiser on dry boards.
+            - Bet for value with top pair or better.
+            - Do NOT slow-play big hands. Bet them.
+
+            When to CHECK:
+            - You missed the board and are first to act.
+            - You have a marginal hand and want a free card.
+            - Check is FREE -- always check rather than fold when no bet
+              is facing you.""")
 
     def _stage_guide(self) -> str:
         lines = [
@@ -142,31 +191,40 @@ class SNGStrategy:
         ]
         stage_advice = {
             TournamentStage.EARLY: (
-                "7-8 players. Play tight, avoid marginal spots. Let weaker "
-                "players eliminate each other. Only commit chips with premium "
-                "or strong hands. Do not bluff into multi-way pots."
+                "7-8 players. Not in the money yet. "
+                "With 15+ BB: play tight, enter pots with premium/strong hands, "
+                "avoid big all-in confrontations. "
+                "With 8-14 BB: steal blinds from BTN/CO, fold from early position. "
+                "With <8 BB: shove-or-fold with any pair, any Ace, KQ, KJ. "
+                "Let weaker players bust each other, but do NOT fold yourself "
+                "into oblivion -- pick up blinds to stay alive."
             ),
             TournamentStage.MIDDLE: (
-                "5-6 players. Start stealing blinds from late position. "
-                "Apply pressure on medium stacks. Look for spots to accumulate "
-                "chips but avoid flipping against big stacks."
+                "5-6 players. Getting closer to the money. "
+                "With 15+ BB: tighten up slightly, steal from late position. "
+                "With 8-14 BB: actively steal blinds. Shove over limpers with "
+                "strong hands. "
+                "With <8 BB: shove-or-fold. Any pair, any Ace, any two Broadway. "
+                "You MUST pick up blinds at this stage or you will blind out."
             ),
             TournamentStage.BUBBLE: (
-                "4 players (1 away from money). ICM pressure is extreme. "
-                "Short stacks: shove or fold with a narrow range. "
-                "Medium stacks: play very tight, avoid confrontations. "
-                "Big stacks: attack medium stacks relentlessly, but respect "
-                "other big stacks. NEVER bust on the bubble with a marginal hand."
+                "4 players (1 from the money). Almost there! "
+                "Big stack: pressure the medium stacks. Raise their blinds. "
+                "Medium stack: play carefully but still steal when unopened. "
+                "Short stack: shove wider -- any pair, any Ace, KQ, KJ, QJ. "
+                "You are so close. Avoid calling someone else's all-in "
+                "without a real hand, but DO shove yourself to stay alive."
             ),
             TournamentStage.IN_THE_MONEY: (
-                "3 players. You are in the money. Open up your ranges "
-                "significantly. Steal blinds aggressively. Target the short "
-                "stack and try to eliminate them for a higher payout."
+                "3 players. Points SECURED! Now play to win. "
+                "Steal blinds aggressively. Shove on short stacks. "
+                "Open your range wide from the button. "
+                "Target the shortest stack for elimination."
             ),
             TournamentStage.HEADS_UP: (
-                "2 players. Widen to nearly any two cards from the button. "
-                "Aggression wins heads-up. Raise most buttons, three-bet "
-                "liberally, and apply maximum pressure."
+                "2 players. Points secured. Maximum aggression. "
+                "Raise nearly every button. Shove with any decent hand. "
+                "Three-bet liberally. Apply relentless pressure."
             ),
         }
         for stage, advice in stage_advice.items():
@@ -179,7 +237,16 @@ class SNGStrategy:
             "PUSH-FOLD REFERENCE (when stack <= 15 BB)",
             "-" * 40,
             "When your stack is 15 big blinds or less, the correct play is "
-            "almost always all-in or fold. Do not limp or min-raise.",
+            "all-in or fold. Do NOT limp or min-raise.",
+            "",
+            "CRITICAL: These ranges apply at ALL stages. If you are short-"
+            "stacked, you MUST shove with these hands or you will blind out.",
+            "",
+            "  1-3 BB:  Shove almost any hand. Any Ace, any pair, any King,",
+            "           any suited connector, any two Broadway cards.",
+            "  4-7 BB:  Shove any pair, any Ace, KQ, KJ, KTs, QJs, JTs.",
+            "  8-10 BB: Shove pairs 55+, ATo+, A8s+, KQo, KJs+, QJs.",
+            "  11-15 BB: Shove pairs 77+, AJo+, ATs+, KQs. Or raise/fold.",
             "",
         ]
         for stage in TournamentStage:
@@ -200,13 +267,20 @@ class SNGStrategy:
         return textwrap.dedent("""\
             COMMON MISTAKES TO AVOID
             ------------------------
-            - Calling all-ins on the bubble with medium-strength hands.
+            - #1 MISTAKE: Folding EVERYTHING and blinding out. If your stack
+              is short (under 8 BB), you MUST shove with decent hands. Waiting
+              for AA/KK with 3 BB will guarantee elimination.
+            - Folding strong made hands to small bets. If you have two pair
+              and someone bets 1 BB into a 4 BB pot, CALL. That is free money.
+            - Calling someone else's all-in on the bubble with a mediocre hand.
+              Shove yourself, but be cautious about calling others' shoves.
             - Open-limping instead of raising or folding.
             - Slow-playing big hands and letting opponents draw for free.
-            - Ignoring position -- playing the same range from UTG and BTN.
-            - Tilting after a bad beat -- stick to the strategy.
-            - Over-bluffing in multi-way pots where someone always calls.
-            - Min-raising with a short stack (just shove or fold).""")
+            - Ignoring position -- play tighter from UTG, wider from BTN.
+            - Clicking the same button repeatedly when it doesn't respond.
+              Click ONCE. If no response after 2 seconds, the action went
+              through or it is not your turn. Wait for the next hand.
+            - Waiting 5+ seconds between observations. Use short waits (2s).""")
 
 
 def build_strategy_task_prompt(table_size: int = 8) -> str:

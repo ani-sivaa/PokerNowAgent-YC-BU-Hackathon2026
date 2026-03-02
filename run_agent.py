@@ -31,6 +31,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable debug-level logging",
     )
+    parser.add_argument(
+        "--max-steps",
+        type=int,
+        default=None,
+        help="Max agent steps (default: BROWSER_USE_MAX_STEPS env or 999999 = uncapped). "
+             "Lower if you want a hard stop.",
+    )
     return parser.parse_args()
 
 
@@ -44,10 +51,12 @@ async def main(args: argparse.Namespace) -> None:
             llm_provider=settings.llm_provider,
             llm_api_key=settings.llm_api_key,
             table_size=args.table_size,
+            max_steps=settings.max_steps,
         )
+    max_steps = args.max_steps if args.max_steps is not None else settings.max_steps
 
     agent = create_agent(settings)
-    await agent.run()
+    await agent.run(max_steps=max_steps)
 
 
 if __name__ == "__main__":

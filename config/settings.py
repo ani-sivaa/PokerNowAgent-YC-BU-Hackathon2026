@@ -50,6 +50,7 @@ class Settings:
     llm_provider: str
     llm_api_key: str
     table_size: int = 8
+    max_steps: int = 999_999
 
     @classmethod
     def from_env(cls, env_path: str = ".env") -> "Settings":
@@ -59,6 +60,7 @@ class Settings:
         llm_provider, llm_api_key = cls._resolve_llm()
         capsolver_key = os.environ.get("CAPSOLVER_API_KEY") or None
         table_size = int(os.environ.get("TABLE_SIZE", "8"))
+        max_steps = int(os.environ.get("BROWSER_USE_MAX_STEPS", "999999"))
 
         settings = cls(
             captcha=CaptchaSettings(api_key=capsolver_key),
@@ -66,6 +68,7 @@ class Settings:
             llm_provider=llm_provider,
             llm_api_key=llm_api_key,
             table_size=table_size,
+            max_steps=max_steps,
         )
         settings._validate()
         return settings

@@ -148,6 +148,16 @@ pytest
 Tests cover hand evaluation, position ranges, tournament stage
 detection, and strategy prompt generation.
 
+## Cursor / IDE budget (extending the 500-request limit)
+
+If you use Cursor and are near the 500 fast premium requests per month:
+
+- **Pro+**: Upgrade for about 3× more usage.
+- **Request packs**: In Cursor **Settings → General → Account → Manage Subscription**, add fast request packs (e.g. +500/month for $20).
+- **Spend limit**: Enable usage-based pricing and set a monthly spend limit so overages are capped.
+
+Details: [Cursor pricing](https://learn-cursor.com/en/docs/pricing), [Community Forum – rate limits](https://forum.cursor.com/t/youve-hit-your-rate-limit-for-the-pro-plan-switch-to-the-auto-model-upgrade-to-pro-for-3x-more-usage-or-set-a-spend-limit-for-overages/109944).
+
 ## Configuration reference
 
 | Variable | Default | Description |
@@ -158,6 +168,7 @@ detection, and strategy prompt generation.
 | `ANTHROPIC_API_KEY` | — | Anthropic Claude key (alternative) |
 | `CAPSOLVER_API_KEY` | — | CapSolver key for automatic captcha solving |
 | `TABLE_SIZE` | `8` | Number of seats at the table |
+| `BROWSER_USE_MAX_STEPS` | `999999` | Max agent steps per run (effectively uncapped). Lower to add a hard stop. |
 
 ## Disclaimer
 
