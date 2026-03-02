@@ -4,6 +4,11 @@ Agent lifecycle management.
 Sets up the Browser-Use agent with the correct LLM, browser, tools,
 and task prompt. The task prompt combines the SNG navigation
 instructions with the full poker strategy guide.
+
+Includes a step hook that auto-clicks "I'm Back" before the LLM
+even processes -- PokerNow marks you AFK if a turn takes too long,
+and waiting for an LLM round-trip to click that button loses another
+5+ seconds.
 """
 
 from __future__ import annotations
@@ -20,6 +25,35 @@ from src.tools import configure_tools, tools
 
 logger = logging.getLogger(__name__)
 
+
+async def _auto_click_im_back(agent: Agent) -> None:
+    """Hook that runs at the START of every step before the LLM is called.
+
+    If PokerNow has shown the "I'm Back" button (meaning the server
+    marked us AFK due to a slow response), click it immediately so we
+    re-enter the game without waiting for a full LLM inference cycle.
+    """
+    try:
+        session = agent.browser_session
+        page = await session.get_current_page()
+        if page is None:
+            return
+        clicked = await page.evaluate("""() => {
+            const buttons = document.querySelectorAll('button, a, [role="button"]');
+            for (const b of buttons) {
+                const text = (b.textContent || '').trim();
+                if (text === "I'm Back" || text === "Im Back" || text === "I'm back") {
+                    b.click();
+                    return true;
+                }
+            }
+            return false;
+        }""")
+        if clicked:
+            logger.info("auto-clicked 'I'm Back' before LLM step")
+    except Exception:
+        pass
+
 NAVIGATION_TASK = """\
 1. Go to https://network.pokernow.com/sng_tournaments.
    If the page shows a "Login" button or you are not logged in, STOP and
@@ -35,7 +69,14 @@ NAVIGATION_TASK = """\
    If a captcha appears when joining, follow the same captcha flow.
 4. When a table opens, take your seat. Only Friendly Sit & Go -- do not
    navigate to Lounge or other game modes.
-5. DETECTING YOUR TURN vs NOT YOUR TURN:
+5. AFK / "I'M BACK" RECOVERY (HIGHEST PRIORITY):
+   If you EVER see an "I'm Back" button on screen, click it IMMEDIATELY
+   as your very first action -- before doing anything else. PokerNow
+   marks you AFK if you take too long on a turn. Clicking "I'm Back"
+   re-enters you into the game. Do this BEFORE reading cards, pot, or
+   anything else. The system auto-clicks it for you in most cases, but
+   if you see it, click it anyway.
+6. DETECTING YOUR TURN vs NOT YOUR TURN:
    It is ONLY your turn when action buttons (Fold, Check, Call, Bet, Raise,
    All In) are visible on screen. If you do NOT see any of these buttons,
    it is NOT your turn -- do NOT try to click anything. Just wait 2 seconds
@@ -44,12 +85,12 @@ NAVIGATION_TASK = """\
      b) You lagged out / timed out -- the game auto-folded for you.
      c) Cards are being dealt or the hand ended.
    In ALL cases: wait 2 seconds (NOT 5), then check for buttons again.
-6. CLICKING RULE: Click each button exactly ONCE. If the button disappears
+7. CLICKING RULE: Click each button exactly ONCE. If the button disappears
    after clicking, your action went through -- do NOT click it again.
    If the button is still there after 2 seconds, click it one more time.
    Never click the same button 3+ times. If buttons vanish, wait for the
    next hand -- do NOT keep clicking stale elements.
-7. When it IS your turn (action buttons are visible): observe the table
+8. When it IS your turn (action buttons are visible): observe the table
    state (your cards, community cards, pot size, stack sizes, position,
    and blind level), then follow the strategy guide to decide your action.
    CRITICAL TIMING: PokerNow gives ~5 seconds per turn.
@@ -63,8 +104,8 @@ NAVIGATION_TASK = """\
    HOW TO CALL: The Call button shows the chip cost (e.g. "Call 200").
    Compare it to the pot. If you have a strong hand (top pair+, two pair,
    flush, straight), CALL. Do NOT fold strong hands to small bets.
-8. When the tournament ends, return to the SNG lobby and rejoin the queue.
-9. Continue until told to stop, then call done() with a short results summary.
+9. When the tournament ends, return to the SNG lobby and rejoin the queue.
+10. Continue until told to stop, then call done() with a short results summary.
 """
 
 
@@ -112,6 +153,7 @@ def create_agent(settings: Settings) -> Agent:
 
     speed_instructions = (
         "SPEED IS CRITICAL. PokerNow gives ~5 seconds per turn. "
+        "If you see 'I'm Back', click it FIRST before anything else. "
         "To RAISE: in one step click Raise → size button → confirm. "
         "To CALL: click Call once. To CHECK: click Check once. "
         "CLICK ONCE ONLY. If the button disappears, it worked. "
@@ -119,7 +161,9 @@ def create_agent(settings: Settings) -> Agent:
         "When waiting for your turn, wait 2 seconds, NOT 5. "
         "Do NOT fold strong made hands (two pair+) to small bets. "
         "If your stack is under 8 BB, you MUST shove with decent hands "
-        "or you will blind out and lose."
+        "or you will blind out and lose. "
+        "Keep your reasoning SHORT. Do not write long analyses. "
+        "Decide fast: which button to click, click it, done."
     )
 
     logger.info("agent ready – table_size=%d", settings.table_size)
@@ -132,5 +176,6 @@ def create_agent(settings: Settings) -> Agent:
         max_actions_per_step=10,
         max_failures=15,
         flash_mode=True,
+        vision_detail_level="low",
         extend_system_message=speed_instructions,
     )

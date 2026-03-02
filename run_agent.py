@@ -13,7 +13,7 @@ import logging
 import sys
 
 from config import Settings
-from src.agent import create_agent
+from src.agent import _auto_click_im_back, create_agent
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,7 +61,10 @@ async def main(args: argparse.Namespace) -> None:
     max_steps = args.max_steps if args.max_steps is not None else settings.max_steps
 
     agent = create_agent(settings)
-    await agent.run(max_steps=max_steps)
+    await agent.run(
+        max_steps=max_steps,
+        on_step_start=_auto_click_im_back,
+    )
 
 
 if __name__ == "__main__":
