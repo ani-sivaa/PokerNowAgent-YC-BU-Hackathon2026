@@ -127,7 +127,12 @@ class SNGStrategy:
                with any other card, call cheap preflop bets to see the flop.
                Evaluate the flop -- continue if you hit a pair or flush draw,
                fold if you miss completely. Do NOT auto-fold playable suited hands.
-            10. After the money ({itm} or fewer players): play aggressively to win."""
+            10. After the money ({itm} or fewer players): play aggressively to win.
+            11. TRACK YOUR CHIPS: note your stack before and after each hand.
+                If you are bleeding chips from blinds without winning any pots,
+                you must loosen up and look for a spot to shove, even with a
+                mediocre hand. Losing 1 BB per orbit to blinds is guaranteed
+                death if you never fight back."""
         ).format(itm=itm)
 
     def _preflop_guide(self) -> str:
