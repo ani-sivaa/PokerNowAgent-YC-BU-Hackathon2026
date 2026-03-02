@@ -43,6 +43,18 @@ STEAL_POSITIONS = {Position.CO, Position.BTN, Position.SB}
 
 THREE_BET_TIERS = {HandTier.PREMIUM, HandTier.STRONG}
 
+BB_DEFENSE_VS_STEAL = {
+    HandTier.PREMIUM, HandTier.STRONG, HandTier.PLAYABLE,
+    HandTier.SPECULATIVE, HandTier.MARGINAL,
+}
+
+
+def should_defend_bb(tier: HandTier, raiser_position: Position) -> bool:
+    """Return True if the BB should defend this hand against a steal."""
+    if raiser_position not in STEAL_POSITIONS:
+        return tier in {HandTier.PREMIUM, HandTier.STRONG, HandTier.PLAYABLE}
+    return tier in BB_DEFENSE_VS_STEAL
+
 
 def can_open(position: Position, tier: HandTier) -> bool:
     """Return True if this hand tier is in the opening range for the position."""
