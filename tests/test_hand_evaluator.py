@@ -5,6 +5,7 @@ import pytest
 from src.strategy.hand_evaluator import (
     HandTier,
     classify_hand,
+    fold_equity,
     implied_odds,
     minimum_equity_to_call,
     pot_odds,
@@ -71,3 +72,43 @@ class TestMinimumEquity:
         assert minimum_equity_to_call(50.0, 100.0) == pytest.approx(
             pot_odds(50.0, 100.0)
         )
+
+
+class TestPotOddsEdgeCases:
+    def test_negative_call_treated_as_zero(self):
+        assert pot_odds(-10.0, 100.0) == 0.0
+
+    def test_very_large_call_approaches_one(self):
+        result = pot_odds(10_000.0, 1.0)
+        assert result > 0.99
+
+    def test_equal_call_and_pot(self):
+        assert pot_odds(100.0, 100.0) == pytest.approx(0.5)
+
+
+class TestImpliedOddsEdgeCases:
+    def test_negative_call(self):
+        assert implied_odds(-5.0, 100.0, 50.0) == 0.0
+
+    def test_large_future_winnings_shrink_odds(self):
+        normal = implied_odds(50.0, 100.0, 0.0)
+        with_future = implied_odds(50.0, 100.0, 500.0)
+        assert with_future < normal
+
+
+class TestFoldEquity:
+    def test_always_folds_is_profitable(self):
+        ev = fold_equity(100.0, 50.0, 1.0)
+        assert ev == pytest.approx(50.0)
+
+    def test_never_folds_loses_shove(self):
+        ev = fold_equity(100.0, 50.0, 0.0)
+        assert ev == pytest.approx(-100.0)
+
+    def test_breakeven_fold_rate(self):
+        ev = fold_equity(100.0, 100.0, 0.5)
+        assert ev == pytest.approx(0.0)
+
+    def test_invalid_fold_pct_raises(self):
+        with pytest.raises(ValueError):
+            fold_equity(100.0, 50.0, 1.5)
