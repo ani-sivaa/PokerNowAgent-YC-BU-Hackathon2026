@@ -27,6 +27,7 @@ class CaptchaSettings:
 class BrowserSettings:
     """Playwright browser restrictions."""
 
+    headless: bool = False
     allowed_domains: tuple[str, ...] = (
         "*.pokernow.com",
         "*.pokernow.club",
@@ -62,9 +63,13 @@ class Settings:
         table_size = int(os.environ.get("TABLE_SIZE", "8"))
         max_steps = int(os.environ.get("BROWSER_USE_MAX_STEPS", "999999"))
 
+        headless = os.environ.get("BROWSER_USE_HEADLESS", "").lower() in (
+            "1", "true", "yes",
+        )
+
         settings = cls(
             captcha=CaptchaSettings(api_key=capsolver_key),
-            browser=BrowserSettings(),
+            browser=BrowserSettings(headless=headless),
             llm_provider=llm_provider,
             llm_api_key=llm_api_key,
             table_size=table_size,

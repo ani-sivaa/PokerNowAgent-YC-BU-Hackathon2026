@@ -32,6 +32,11 @@ def parse_args() -> argparse.Namespace:
         help="Enable debug-level logging",
     )
     parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run browser without a visible window",
+    )
+    parser.add_argument(
         "--max-steps",
         type=int,
         default=None,

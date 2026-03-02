@@ -25,9 +25,12 @@ POKERNOW_BROWSER_PROFILE = BrowserProfile(
 def create_browser(settings: BrowserSettings) -> Browser:
     """Return a Browser locked to the configured domain allowlist."""
     logger.info(
-        "creating browser with %d allowed domains", len(settings.allowed_domains)
+        "creating browser (headless=%s) with %d allowed domains",
+        settings.headless,
+        len(settings.allowed_domains),
     )
     return Browser(
         browser_profile=POKERNOW_BROWSER_PROFILE,
+        headless=settings.headless,
         allowed_domains=list(settings.allowed_domains),
     )
