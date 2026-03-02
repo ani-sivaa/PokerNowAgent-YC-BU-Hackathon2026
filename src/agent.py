@@ -86,15 +86,18 @@ def create_llm(settings: Settings) -> Any:
 
     if settings.llm_provider == "openai":
         from browser_use import ChatOpenAI
-        return ChatOpenAI(model="gpt-4.1-mini")
+        model = settings.llm_model or "gpt-4.1-mini"
+        return ChatOpenAI(model=model)
 
     if settings.llm_provider == "google":
         from browser_use import ChatGoogleGenerativeAI
-        return ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+        model = settings.llm_model or "gemini-2.0-flash"
+        return ChatGoogleGenerativeAI(model=model)
 
     if settings.llm_provider == "anthropic":
         from browser_use import ChatAnthropic
-        return ChatAnthropic(model="claude-sonnet-4-20250514")
+        model = settings.llm_model or "claude-sonnet-4-20250514"
+        return ChatAnthropic(model=model)
 
     raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
 

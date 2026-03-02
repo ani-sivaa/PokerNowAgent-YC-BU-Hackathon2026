@@ -50,6 +50,7 @@ class Settings:
     browser: BrowserSettings
     llm_provider: str
     llm_api_key: str
+    llm_model: str = ""
     table_size: int = 8
     max_steps: int = 999_999
 
@@ -62,6 +63,7 @@ class Settings:
         capsolver_key = os.environ.get("CAPSOLVER_API_KEY") or None
         table_size = int(os.environ.get("TABLE_SIZE", "8"))
         max_steps = int(os.environ.get("BROWSER_USE_MAX_STEPS", "999999"))
+        llm_model = os.environ.get("LLM_MODEL", "")
 
         headless = os.environ.get("BROWSER_USE_HEADLESS", "").lower() in (
             "1", "true", "yes",
@@ -72,6 +74,7 @@ class Settings:
             browser=BrowserSettings(headless=headless),
             llm_provider=llm_provider,
             llm_api_key=llm_api_key,
+            llm_model=llm_model,
             table_size=table_size,
             max_steps=max_steps,
         )
