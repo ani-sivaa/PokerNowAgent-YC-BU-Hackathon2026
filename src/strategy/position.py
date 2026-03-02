@@ -74,8 +74,9 @@ def position_from_seat_index(seat: int, num_players: int, dealer: int) -> Positi
         6: [Position.MP1, Position.HJ, Position.CO, Position.BTN, Position.SB, Position.BB],
         7: [Position.MP, Position.MP1, Position.HJ, Position.CO, Position.BTN, Position.SB, Position.BB],
         8: [Position.UTG, Position.MP, Position.MP1, Position.HJ, Position.CO, Position.BTN, Position.SB, Position.BB],
+        9: [Position.UTG, Position.UTG1, Position.MP, Position.MP1, Position.HJ, Position.CO, Position.BTN, Position.SB, Position.BB],
     }
-    order = positions_by_size.get(min(num_players, 8), positions_by_size[8])
+    order = positions_by_size.get(min(num_players, 9), positions_by_size[8])
     offset = (seat - dealer - 1) % num_players
     if offset < len(order):
         return order[offset]
