@@ -28,8 +28,9 @@ class StackCategory(Enum):
     BIG = auto()
 
 
-# Thresholds expressed in big blinds
-SHORT_STACK_BB = 10
+# Thresholds expressed in big blinds.
+# 8 BB aligns with the strategy prompt's shove-or-fold cutoff.
+SHORT_STACK_BB = 8
 MEDIUM_STACK_BB = 25
 
 # 8-player SNG: top 3 pay, so bubble is at 4 players

@@ -35,6 +35,10 @@ class TestClassifyStack:
     def test_short_stack(self):
         assert classify_stack(500, 100) == StackCategory.SHORT
 
+    def test_boundary_short_to_medium(self):
+        assert classify_stack(800, 100) == StackCategory.SHORT
+        assert classify_stack(900, 100) == StackCategory.MEDIUM
+
     def test_medium_stack(self):
         assert classify_stack(1500, 100) == StackCategory.MEDIUM
 
