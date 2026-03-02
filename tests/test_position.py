@@ -59,8 +59,22 @@ class TestPositionFromSeat:
         assert pos in (Position.BTN, Position.SB, Position.BB)
 
     def test_all_positions_mapped(self):
-        for n in range(2, 9):
-            assert n in {2, 3, 4, 5, 6, 7, 8}
+        for n in range(2, 10):
             for seat in range(n):
                 pos = position_from_seat_index(seat, n, dealer=0)
                 assert isinstance(pos, Position)
+
+    def test_nine_player_has_utg1(self):
+        positions = [
+            position_from_seat_index(seat, 9, dealer=0) for seat in range(9)
+        ]
+        assert Position.UTG1 in positions
+
+    def test_different_dealer_rotates_positions(self):
+        pos_d0 = position_from_seat_index(0, 6, dealer=0)
+        pos_d1 = position_from_seat_index(0, 6, dealer=1)
+        assert pos_d0 != pos_d1
+
+    def test_wraparound_seat(self):
+        pos = position_from_seat_index(7, 8, dealer=6)
+        assert isinstance(pos, Position)
