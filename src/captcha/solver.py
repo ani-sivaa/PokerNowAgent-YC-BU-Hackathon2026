@@ -23,9 +23,14 @@ if TYPE_CHECKING:
 try:
     import httpx
 except ImportError:
-    httpx = None
+    httpx = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
+
+_HTTPX_MISSING_MSG = (
+    "httpx is required for captcha solving but not installed. "
+    "Run: pip install httpx"
+)
 
 
 async def detect_recaptcha(page: Page) -> dict | None:
@@ -130,7 +135,8 @@ async def solve_captcha(
     Returns (success, message) so the caller can decide on fallback.
     """
     if httpx is None:
-        return False, "httpx is not installed (pip install httpx)"
+        logger.error(_HTTPX_MISSING_MSG)
+        return False, _HTTPX_MISSING_MSG
 
     try:
         page = await browser_session.must_get_current_page()
