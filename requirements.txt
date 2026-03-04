@@ -1,3 +1,4 @@
+# Pinned to match pyproject.toml — use `pip install -e .` for dev.
 browser-use>=0.1.40
 playwright>=1.40.0
 httpx>=0.25.0
