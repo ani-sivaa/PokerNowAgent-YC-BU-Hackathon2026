@@ -51,8 +51,8 @@ async def _auto_click_im_back(agent: Agent) -> None:
         }""")
         if clicked:
             logger.info("auto-clicked 'I'm Back' before LLM step")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("auto-click hook error (non-fatal): %s", exc)
 
 NAVIGATION_TASK = """\
 1. Go to https://network.pokernow.com/sng_tournaments.
