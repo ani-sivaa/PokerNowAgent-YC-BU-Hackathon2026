@@ -124,22 +124,14 @@ async def inject_token(page: Page, token: str) -> None:
     await page.evaluate(js)
 
 
-async def solve_captcha(
+async def _solve_once(
     browser_session: BrowserSession,
     api_key: str,
-    api_url: str = "https://api.capsolver.com",
-    poll_interval: int = 2,
-    poll_timeout: int = 120,
+    api_url: str,
+    poll_interval: int,
+    poll_timeout: int,
 ) -> tuple[bool, str]:
-    """
-    End-to-end captcha solve attempt.
-
-    Returns (success, message) so the caller can decide on fallback.
-    """
-    if httpx is None:
-        logger.error(_HTTPX_MISSING_MSG)
-        return False, _HTTPX_MISSING_MSG
-
+    """Single captcha solve attempt."""
     try:
         page = await browser_session.must_get_current_page()
     except Exception as exc:
@@ -187,3 +179,36 @@ async def solve_captcha(
     logger.info("captcha solved successfully via capsolver")
     await asyncio.sleep(1)
     return True, "CAPTCHA solved via CapSolver"
+
+
+async def solve_captcha(
+    browser_session: BrowserSession,
+    api_key: str,
+    api_url: str = "https://api.capsolver.com",
+    poll_interval: int = 2,
+    poll_timeout: int = 120,
+    max_retries: int = 2,
+) -> tuple[bool, str]:
+    """
+    End-to-end captcha solve with retry logic.
+
+    Retries up to max_retries times on transient CapSolver failures
+    before falling back to the human solver.
+    """
+    if httpx is None:
+        logger.error(_HTTPX_MISSING_MSG)
+        return False, _HTTPX_MISSING_MSG
+
+    last_msg = ""
+    for attempt in range(1, max_retries + 1):
+        logger.info("captcha solve attempt %d/%d", attempt, max_retries)
+        success, last_msg = await _solve_once(
+            browser_session, api_key, api_url, poll_interval, poll_timeout
+        )
+        if success:
+            return True, last_msg
+        if "No reCAPTCHA element found" in last_msg:
+            return False, last_msg
+        logger.warning("attempt %d failed: %s", attempt, last_msg)
+
+    return False, f"All {max_retries} attempts failed. Last error: {last_msg}"
