@@ -13,6 +13,7 @@ import logging
 import sys
 
 from config import Settings
+from config.settings import BrowserSettings
 from src.agent import _auto_click_im_back, create_agent
 
 
@@ -49,13 +50,23 @@ def parse_args() -> argparse.Namespace:
 async def main(args: argparse.Namespace) -> None:
     settings = Settings.from_env()
 
+    overrides: dict = {}
     if args.table_size is not None:
+        overrides["table_size"] = args.table_size
+    if args.headless:
+        overrides["browser"] = BrowserSettings(
+            headless=True,
+            allowed_domains=settings.browser.allowed_domains,
+        )
+
+    if overrides:
         settings = Settings(
             captcha=settings.captcha,
-            browser=settings.browser,
+            browser=overrides.get("browser", settings.browser),
             llm_provider=settings.llm_provider,
             llm_api_key=settings.llm_api_key,
-            table_size=args.table_size,
+            llm_model=settings.llm_model,
+            table_size=overrides.get("table_size", settings.table_size),
             max_steps=settings.max_steps,
         )
     max_steps = args.max_steps if args.max_steps is not None else settings.max_steps
