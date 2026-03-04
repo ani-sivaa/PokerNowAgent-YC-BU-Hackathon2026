@@ -7,6 +7,7 @@ from src.strategy.position import (
     can_open,
     is_steal_position,
     position_from_seat_index,
+    should_defend_bb,
     should_three_bet,
 )
 
@@ -78,3 +79,20 @@ class TestPositionFromSeat:
     def test_wraparound_seat(self):
         pos = position_from_seat_index(7, 8, dealer=6)
         assert isinstance(pos, Position)
+
+
+class TestBBDefense:
+    def test_defend_vs_button_steal(self):
+        assert should_defend_bb(HandTier.MARGINAL, Position.BTN)
+        assert should_defend_bb(HandTier.SPECULATIVE, Position.CO)
+
+    def test_tighter_vs_early_position(self):
+        assert not should_defend_bb(HandTier.MARGINAL, Position.UTG)
+        assert should_defend_bb(HandTier.PLAYABLE, Position.UTG)
+
+    def test_always_defend_premium(self):
+        for pos in Position:
+            assert should_defend_bb(HandTier.PREMIUM, pos)
+
+    def test_trash_never_defended(self):
+        assert not should_defend_bb(HandTier.TRASH, Position.BTN)
