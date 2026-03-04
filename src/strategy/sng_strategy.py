@@ -319,7 +319,10 @@ class SNGStrategy:
             - Waiting 5+ seconds between observations. Use short waits (2s).
             - Auto-folding suited broadway hands preflop when the price is
               cheap. A hand like Kh 7h or Qs 4s can make a flush. See the
-              flop cheaply, THEN decide. Only fold these to big raises.""")
+              flop cheaply, THEN decide. Only fold these to big raises.
+            - Going AFK by thinking too long. Make decisions FAST. If you
+              have a strong hand, bet or call immediately. If you have
+              trash, fold immediately. Long deliberation costs you turns.""")
 
 
 def build_strategy_task_prompt(table_size: int = 8) -> str:
